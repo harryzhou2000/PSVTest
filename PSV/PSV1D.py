@@ -98,23 +98,25 @@ class PSV1DElem:
     def nBase(self) -> int:
         return self._base.nBase
 
-    def testSingleWave(elem, k: float):
+    def testSingleWave(
+        elem, k: float
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         MInv = np.linalg.pinv(elem.sub_mean[:, 1:])
         A = np.zeros((4, 4), dtype=np.complex128)
         ### Row for um0
         MR = elem.Base(np.array([[1]])).transpose()[:, 1:] @ MInv
         ML = elem.Base(np.array([[-1]])).transpose()[:, 1:] @ MInv
         # print(MR)
-        A[0, 0] = -1 + np.exp(-1j * k * 2)
-        A[0, 1:] = -MR + MR * np.exp(-1j * k * 2)
+        A[0, 0] = -1 + np.exp(-1j * k)
+        A[0, 1:] = -MR + MR * np.exp(-1j * k)
         A[0, :] /= 2  # volume
         ### Row for um1
         MR1 = elem.Base(elem.elems[0][:, 1:2]).transpose()[:, 1:] @ MInv
         ML1 = elem.Base(elem.elems[0][:, 0:1]).transpose()[:, 1:] @ MInv
         # print(MR1)
         if elem.sub_use_extern:
-            A[1, 0] = -1 + np.exp(-1j * k * 2)
-            A[1, 1:] = -MR1 + MR * np.exp(-1j * k * 2)
+            A[1, 0] = -1 + np.exp(-1j * k)
+            A[1, 1:] = -MR1 + MR * np.exp(-1j * k)
         else:
             A[1, 1:] = -MR1 + ML1
         A[1, :] /= elem.sub_vol[0]
@@ -132,7 +134,31 @@ class PSV1DElem:
         A[3, :] /= elem.sub_vol[2]
         A[3, :] -= A[0, :]
         # print(A)
-        return np.linalg.eigvals(A)
+
+        (evals, evecs) = np.linalg.eig(A)
+        subInts = []
+        subInts.append(
+            (
+                np.exp(1j * k / 2 * 1)
+                - np.exp(1j * k / 2 * -1)  # note 'k' is wavenumber * delta_x
+            )
+            / 2
+        )
+        for ie in range(elem.nBase - 1):
+            subInts.append(
+                (
+                    np.exp(1j * k / 2 * elem.elems[ie][0, 1])
+                    - np.exp(
+                        1j * k / 2 * elem.elems[ie][0, 0]
+                    )  # note 'k' is wavenumber * delta_x
+                )
+                / elem.sub_vol[ie]
+            )
+        subInts = np.array(subInts)
+
+        return (evals * 2, evecs, subInts, A * 2)
+
+        # return np.linalg.eigvals(A)
         eigs = np.linalg.eigvals(A) / k
         print(eigs)
         print(np.min(np.abs(eigs + 1j)))

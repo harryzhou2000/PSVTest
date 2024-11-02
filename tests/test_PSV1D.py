@@ -22,4 +22,4 @@ if __name__ == "__main__":
 
     ##
     elem.testSingleWave(np.pi * 0.03 * 0.5)
-    plot_fourier_1d(elem, max_k=np.pi * 2, selectMethod="MinDispErr")
+    plot_fourier_1d(elem, max_k=np.pi * 4, selectMethod="MinDispErr")
