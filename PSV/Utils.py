@@ -4,15 +4,24 @@ import matplotlib.pyplot as plt
 from . import PSV1D
 
 
-def plot_fourier_1d(elem: PSV1D.PSV1DElem, max_k=np.pi, selectMethod="MinDispErr"):
-    ks = np.linspace(0, max_k, 129)
+def plot_fourier_1d(
+    elem: PSV1D.PSV1DElem,
+    max_k=np.pi,
+    selectMethod="MinDispErr",
+    useContinuousEV=True,
+    kThresRatio=0.25,
+    nK=129,
+    reallyPlot=False,
+):
+    ks = np.linspace(0, max_k, nK)
     ks[0] += 1e-5
+    kThres = max_k * kThresRatio
 
     reKap = []
     imKap = []
     imKapR = []
 
-    for k in ks:
+    for ik, k in enumerate(ks):
         (kaps, evs, v0, A) = elem.testSingleWave(k)
         kaps /= -1j
         if selectMethod == "GEV":
@@ -29,24 +38,36 @@ def plot_fourier_1d(elem: PSV1D.PSV1DElem, max_k=np.pi, selectMethod="MinDispErr
         if selectMethod == "TestV":
             reKap.append(testKap.real)
             imKap.append(testKap.imag)
+        elif useContinuousEV and k > kThres and ik > 0:
+            ikapAcc = np.argmax(np.abs(evMaxPrev.conj() @ evs))
+            reKap.append(kaps[ikapAcc].real)
+            imKap.append(kaps[ikapAcc].imag)
         else:
             reKap.append(kaps[ikapAcc].real)
             imKap.append(kaps[ikapAcc].imag)
 
         imKapR.append(np.max(np.imag(kaps)))
 
+        # APrev = A
+        # evsPrev = evs
+        # kapsprev = kaps
+        evMaxPrev = evs[:, ikapAcc]
+
     y_data = [reKap, imKap, imKapR]
     y_names = ["Re", "Im", "ImR"]
+    if reallyPlot:
 
-    # Plot each (x, y) data pair in a separate figure window
-    for i, (cy, cyname) in enumerate(zip(y_data, y_names)):
-        plt.figure(figsize=(6, 4))  # Create a new figure window for each plot
-        plt.plot(ks, cy, label=cyname)
-        if i == 0:
-            plt.plot(ks, ks, label="exact")
-        plt.xlabel("kappa")
-        plt.ylabel("kappa_num")
-        plt.title(cyname)
-        plt.legend()  # Show the legend
+        # Plot each (x, y) data pair in a separate figure window
+        for i, (cy, cyname) in enumerate(zip(y_data, y_names)):
+            plt.figure(figsize=(6, 4))  # Create a new figure window for each plot
+            plt.plot(ks, cy, label=cyname)
+            if i == 0:
+                plt.plot(ks, ks, label="exact")
+            plt.xlabel("kappa")
+            plt.ylabel("kappa_num")
+            plt.title(cyname)
+            plt.legend()  # Show the legend
 
-    plt.show()
+        plt.show()
+
+    return (ks, y_data, y_names)
