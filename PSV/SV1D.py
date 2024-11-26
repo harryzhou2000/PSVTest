@@ -12,6 +12,9 @@ class SV1DElem(PSV1D.PSV1DElem):
         param_space: str = "Line",
         portions=(-0.5, 0, 0.5),
         use_mu=False,
+        leastSquareOption=None,
+        use_lsq_diff=False,
+        lsq_diff_scale=1,
     ):
         """ """
         assert param_space == "Line"
@@ -27,6 +30,9 @@ class SV1DElem(PSV1D.PSV1DElem):
         self._GetSubElems()
         self._GetSubMean()
         self._use_mu = use_mu
+        self._lsq = leastSquareOption
+        self._use_lsq_diff = use_lsq_diff
+        self._lsq_diff_scale = lsq_diff_scale
 
     def _GetSubElems(self):
         self._elems = []
@@ -40,6 +46,14 @@ class SV1DElem(PSV1D.PSV1DElem):
                 self._elems.append(
                     np.array([[self._portions[i * 2], self._portions[i * 2 + 1]]])
                 )
+        elif (len(self._portions) / 2) in range(
+            self.order + 2,
+            self.order * 128 + 3,
+        ):
+            for i in range(0, int(len(self._portions) / 2)):
+                self._elems.append(
+                    np.array([[self._portions[i * 2], self._portions[i * 2 + 1]]])
+                )
         else:
             raise ValueError("Invalid number of portions")
 
@@ -47,9 +61,24 @@ class SV1DElem(PSV1D.PSV1DElem):
         elem, k: float
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         MInv = np.linalg.pinv(elem.sub_meanF)
+        if elem._lsq is not None:
+            if isinstance(elem._lsq, str):
+                pass
+            else:
+                MInv = (
+                    np.linalg.pinv(
+                        elem.sub_meanF.transpose() @ np.diag(elem._lsq) @ elem.sub_meanF
+                    )
+                    @ elem.sub_meanF.transpose()
+                    @ np.diag(elem._lsq)
+                )
+        MMean = (
+            np.eye(elem.nElem) - elem.sub_meanF @ MInv
+        )  # MMean @ uMeans == uMeans - uMeans_rec
+
         if np.linalg.cond(elem.sub_meanF) > 1e10:
             warnings.warn("Matrix is singular")
-        A = np.zeros((elem.nBase, elem.nBase), dtype=np.complex128)
+        A = np.zeros((elem.nElem, elem.nElem), dtype=np.complex128)
 
         muInternal = 0.5 * 1 * 2
 
@@ -59,7 +88,7 @@ class SV1DElem(PSV1D.PSV1DElem):
         MmuR = 1 * (ML * np.exp(+1j * k) - MR)
         MmuL = 1 * (ML - MR * np.exp(-1j * k))
 
-        for ie in range(elem.nBase):
+        for ie in range(elem.nElem):
             e = elem.elems[ie]
 
             MRc = elem.BaseF(elem.elems[ie][:, 1:2]).transpose()[:, :] @ MInv
@@ -80,18 +109,22 @@ class SV1DElem(PSV1D.PSV1DElem):
                 A[ie, :] = -MRc + MR * np.exp(-1j * k)
                 if elem._use_mu:
                     A[ie, :] += -MmuRc.reshape(-1)
-            elif ie == elem.nBase - 1:
+            elif ie == elem.nElem - 1:
                 A[ie, :] = -MRc + MLc
                 if elem._use_mu:
                     A[ie, :] += MmuLc.reshape(-1)
+                if elem._use_lsq_diff:
+                    A[ie, :] += (MMean[ie - 1, :] - MMean[ie, :]) * elem._lsq_diff_scale
             else:
                 A[ie, :] = -MRc + MLc
                 if elem._use_mu:
                     A[ie, :] += (-MmuRc + MmuLc).reshape(-1)
+                if elem._use_lsq_diff:
+                    A[ie, :] += (MMean[ie - 1, :] - MMean[ie, :]) * elem._lsq_diff_scale
             A[ie, :] /= elem.sub_vol[ie]
 
         subInts = []
-        for ie in range(elem.nBase):
+        for ie in range(elem.nElem):
             subInts.append(
                 (
                     np.exp(1j * k / 2 * elem.elems[ie][0, 1])

@@ -12,6 +12,7 @@ def plot_fourier_1d(
     kThresRatio=0.25,
     nK=129,
     reallyPlot=False,
+    titlePrefix = "",
 ):
     ks = np.linspace(0, max_k, nK)
     ktc = 0.5
@@ -65,6 +66,7 @@ def plot_fourier_1d(
     if reallyPlot:
         errs = np.sqrt((reKap-ks)**2 + imKap**2)
         print(f"Errors: {errs[0:4]}; ratio [{np.exp2(np.diff(np.log2(errs[0:4])))}]")
+        print(f"max dis {imKapR.max()}")
 
         # Plot each (x, y) data pair in a separate figure window
         for i, (cy, cyname) in enumerate(zip(y_data, y_names)):
@@ -74,7 +76,7 @@ def plot_fourier_1d(
                 plt.plot(ks, ks, label="exact")
             plt.xlabel("kappa")
             plt.ylabel("kappa_num")
-            plt.title(cyname)
+            plt.title(titlePrefix + cyname)
             plt.legend()  # Show the legend
 
         plt.show()

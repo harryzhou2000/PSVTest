@@ -33,16 +33,39 @@ if __name__ == "__main__":
     #         )
     #     )
 
-    elems.append((SV1D.SV1DElem(3, portions=(-0.5, 0, 0.5)), "SV 0.5"))
-    elems.append((SV1D.SV1DElem(3, portions=(-0.7887, 0, 0.7887)), "SV 0.7887"))
-    elems.append((SV1D.SV1DElem(3, portions=(-0.9, 0, 0.9)), "SV 0.9"))
-    for a,b in [(0.5, 0.7), (0.5, 0.5), (0.5, 0.3)]:
+    # elems.append((SV1D.SV1DElem(3, portions=(-0.5, 0, 0.5)), "SV 0.5"))
+    # elems.append((SV1D.SV1DElem(3, portions=(-0.7887, 0, 0.7887)), "SV 0.7887"))
+    # elems.append((SV1D.SV1DElem(3, portions=(-0.9, 0, 0.9)), "SV 0.9"))
+    # for a, b in [(0.5, 0.7), (0.5, 0.5), (0.5, 0.3)]:
+    #     elems.append(
+    #         (
+    #             SV1D.SV1DElem(
+    #                 3,
+    #                 portions=(
+    #                     -1,
+    #                     -0,
+    #                     -a - b / 2,
+    #                     -a + b / 2,
+    #                     a - b / 2,
+    #                     a + b / 2,
+    #                     0,
+    #                     1,
+    #                 ),
+    #             ),
+    #             f"OSV {a} {b}",
+    #         )
+    #     )
+
+    useDiff = True
+    for Ne in [5, 6, 8, 16, 24]:
+        ebs = np.linspace(-1, 1, Ne + 1)
+        portions = []
+        for ie in range(Ne):
+            portions.extend(ebs[ie : ie + 2])
         elems.append(
             (
-                SV1D.SV1DElem(
-                    3, portions=(-1, -0, -a - b / 2, -a + b / 2, a - b / 2, a + b / 2, 0, 1)
-                ),
-                f"OSV {a} {b}",
+                SV1D.SV1DElem(3, portions=tuple(portions), use_lsq_diff=useDiff),
+                f"LSQSV Ne {Ne}, useDiff {useDiff}",
             )
         )
 

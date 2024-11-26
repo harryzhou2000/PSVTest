@@ -102,6 +102,10 @@ class PSV1DElem:
     def nBase(self) -> int:
         return self._base.nBase
 
+    @property
+    def nElem(self) -> int:
+        return len(self._elems)
+
     def testSingleWave(
         elem, k: float
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
