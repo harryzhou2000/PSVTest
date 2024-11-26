@@ -1,15 +1,16 @@
 import sys, os
 import numpy as np
 import scipy as sp
-import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import PSV.SV1D as SV1D
 from PSV.Utils import plot_fourier_1d
 
 if __name__ == "__main__":
-    elem = SV1D.SV1DElem(3, portions=(-0.8, 0, 0.8))
-    # elem = SV1D.SV1DElem(3, portions=(-1, -0.5, -1, 0, 0, 1, 0.5, 1))
+    elem = SV1D.SV1DElem(
+        3, portions=(-0.77, 0, 0.77), use_mu=False
+    )
+    elem = SV1D.SV1DElem(3, portions=(-1, -0.5, -1, 0, 0, 1, 0.5, 1))
     sep = 0.3
     wid = 0.4
     # elem = SV1D.SV1DElem(
@@ -32,5 +33,6 @@ if __name__ == "__main__":
         max_k=np.pi * 4,
         # selectMethod="TestV",
         # selectMethod="MaxDiss",
+        # useContinuousEV=False,
         reallyPlot=True,
     )

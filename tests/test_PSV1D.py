@@ -7,7 +7,7 @@ import PSV.PSV1D as PSV1D
 from PSV.Utils import plot_fourier_1d
 
 if __name__ == "__main__":
-    elem = PSV1D.PSV1DElem(3, portions=(2 / 4, 2 / 3))
+    elem = PSV1D.PSV1DElem(3, portions=(0.25, 0.5))
     testBase = elem.Base(np.array([[0.5]]))
     testBaseAns = np.array([[0, 0.5, 0.25 - 1.0 / 3, 0.125]]).transpose()
     testBaseErr = np.linalg.norm(testBase - testBaseAns) / np.linalg.norm(testBaseAns)

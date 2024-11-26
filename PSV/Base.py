@@ -71,6 +71,17 @@ def getPolyNum(dim: int, order: int) -> int:
         return (order + 1) * (order + 2) * (order + 3) // 6
 
 
+def getDFactorials():
+    return np.array(
+        [
+            [1, 0, 0, 0],
+            [1, 1, 0, 0],
+            [1, 2, 2, 0],
+            [1, 3, 6, 6],
+        ]
+    )
+
+
 class TaylorBase:
     def __init__(self, dim: int, order: int):
         self.dim = dim
@@ -84,25 +95,49 @@ class TaylorBase:
         self._dols = [self.dol1D, self.dol2D, self.dol3D][dim - 1][
             : self.nBase, : self.dim
         ]
+        self._defactorials = getDFactorials()
 
     @property
     def dols(self):
         return self._dols
 
-    def __call__(self, x: np.ndarray):
+    def __call__(self, x: np.ndarray, diff: tuple[int, ...] = ()):
         assert x.shape[0] == self.dim
         # for i in range(self.nBase):
-        retL = np.power(
-            x.reshape(((1,) + tuple(x.shape))),
-            self.dols.reshape(
-                (
-                    self.nBase,
-                    self.dim,
-                )
-                + (1,) * (len(x.shape) - 1)
-            ),
-        )
-        return np.reshape(np.prod(retL, 1), (self.nBase,) + tuple(x.shape[1:]))
+        if len(diff) == 0:
+            retL = np.power(
+                x.reshape(((1,) + tuple(x.shape))),
+                self.dols.reshape(
+                    (
+                        self.nBase,
+                        self.dim,
+                    )
+                    + (1,) * (len(x.shape) - 1)
+                ),
+            )
+            return np.reshape(np.prod(retL, 1), (self.nBase,) + tuple(x.shape[1:]))
+        else:
+            assert len(diff) == self.dim
+            diff = np.array(diff, dtype=np.int32)
+            coefDiff = np.prod(
+                self._defactorials[self._dols, diff.reshape(1, self.dim)], axis=1
+            )
+            dolsDiff = np.maximum(
+                self._dols - diff.reshape(1, self.dim), 0, dtype=np.int32
+            )
+            retL = np.power(
+                x.reshape(((1,) + tuple(x.shape))),
+                dolsDiff.reshape(
+                    (
+                        self.nBase,
+                        self.dim,
+                    )
+                    + (1,) * (len(x.shape) - 1)
+                ),
+            )
+            return np.reshape(
+                np.prod(retL, 1), (self.nBase,) + tuple(x.shape[1:])
+            ) * coefDiff.reshape((self.nBase,) + (1,) * (len(x.shape) - 1))
 
 
 # def TaylorBase(x: np.ndarray, degree: int) -> np.ndarray:

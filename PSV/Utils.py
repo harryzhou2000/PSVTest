@@ -14,7 +14,11 @@ def plot_fourier_1d(
     reallyPlot=False,
 ):
     ks = np.linspace(0, max_k, nK)
-    ks[0] += 1e-5
+    ktc = 0.5
+    ks[0] = 1e-1 * ktc
+    ks[1] = 2e-1 * ktc
+    ks[2] = 4e-1 * ktc
+    ks[3] = 6e-1 * ktc
     kThres = max_k * kThresRatio
 
     reKap = []
@@ -52,10 +56,15 @@ def plot_fourier_1d(
         # evsPrev = evs
         # kapsprev = kaps
         evMaxPrev = evs[:, ikapAcc]
+    reKap = np.array(reKap)
+    imKap = np.array(imKap)
+    imKapR = np.array(imKapR)
 
     y_data = [reKap, imKap, imKapR]
     y_names = ["Re", "Im", "ImR"]
     if reallyPlot:
+        errs = np.sqrt((reKap-ks)**2 + imKap**2)
+        print(f"Errors: {errs[0:4]}; ratio [{np.exp2(np.diff(np.log2(errs[0:4])))}]")
 
         # Plot each (x, y) data pair in a separate figure window
         for i, (cy, cyname) in enumerate(zip(y_data, y_names)):

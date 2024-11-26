@@ -1,6 +1,7 @@
 import numpy as np
 from . import Quad as Quad
 from . import Base as Base
+import warnings
 
 
 class PSV1DElem:
@@ -34,13 +35,13 @@ class PSV1DElem:
 
     def _GetSubElems(self):
         self._elems = []
-        self._elems.append(np.array([[-1, -1 + self._portions[1]]]))
-        self._elems.append(np.array([[1 - self._portions[1], 1]]))
+        self._elems.append(np.array([[-1, -self._portions[0]]]))
+        self._elems.append(np.array([[self._portions[0], 1]]))
         # self._elems.append( # singular if put at center
         #     np.array([[-self._portions[0] / 2, self._portions[0] / 2]])
         # )
 
-        self._elems.append(np.array([[-self._portions[0], 0]]))  # put at left
+        self._elems.append(np.array([[-self._portions[1], 0]]))  # put at left
 
     def _GetSubMean(self):
         self._sub_mean = []
@@ -61,6 +62,9 @@ class PSV1DElem:
 
     def BaseF(self, xi: np.ndarray):
         return self._base(xi)
+
+    def BaseD(self, xi: np.ndarray, diff=(0,)):
+        return self._base(xi, diff)
 
     @property
     def order(self) -> int:
@@ -102,6 +106,8 @@ class PSV1DElem:
         elem, k: float
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         MInv = np.linalg.pinv(elem.sub_mean[:, 1:])
+        if np.linalg.cond(elem.sub_mean[:, 1:]) > 1e10:
+            warnings.warn("Matrix is singular")
         A = np.zeros((4, 4), dtype=np.complex128)
         ### Row for um0
         MR = elem.Base(np.array([[1]])).transpose()[:, 1:] @ MInv
